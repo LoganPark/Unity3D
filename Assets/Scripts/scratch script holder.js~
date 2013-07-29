@@ -1,0 +1,205 @@
+class PlayerInfo
+{
+     public var networkPlayer : NetworkPlayer;
+     public var name : String;
+     public var transform : Transform;
+     public var isLocal : boolean;
+
+    public function Clone () : PlayerInfo {
+        var pla : PlayerInfo= new PlayerInfo();
+        pla.networkPlayer = networkPlayer;
+        pla.name = name;
+        pla.transform = transform;
+        pla.isLocal = isLocal;
+        return pla;
+    }
+}
+// Use this for initialization
+function Start () {
+}
+
+// Update is called once per frame
+function Update () {
+}
+
+
+public static  var SP : NetworkingControl;
+private  var PlayerList : ArrayList;
+private var localPlayerInfo : PlayerInfo;
+private  var serverStartedWithMaxPlayers : int = 0;
+private var hostData : HostData[]= null;
+private var debugMatchmakingStatus : String = "";
+
+private  var myLocalTransform : Transform;
+
+function awake () {
+SP = this;
+    PlayerList = new ArrayList();
+
+    //InvokeRepeating("ServerRegisterHost", 0, 300);
+
+    //Network.isMessageQueueRunning = true;
+
+    //if (Network.isServer)
+    //{
+        //Server
+        serverStartedWithMaxPlayers = Network.maxConnections;
+        SpawnLocalPlayer();
+        StartCoroutine(ServerStarted());
+    /*}
+    //else
+    //{
+        SpawnLocalPlayer();
+        if (Network.isClient)
+        {
+            //Client: Already connected                
+        }
+        else
+        {
+            //No connection: Try connecting, otherwise host
+            // Not doing this... players will explicitly seek to connect.
+            //StartCoroutine(AutoJoinFeature());
+        }
+    }*/
+    
+    //MultiplayerFunctions.SP.SetHostListDelegate(FullHostListReceived);
+   }
+
+   function FullHostListReceived() : void {
+    hostData = MultiplayerFunctions.SP.GetHostData();        
+}
+
+function ServerStarted () : IEnumerator {
+    debugMatchmakingStatus="ServerStarted";
+            
+    PlayerList = new ArrayList();//Clear list
+    
+    Invoke("ServerRegisterHost", 10);
+    networkView.RPC("AddPlayer", RPCMode.AllBuffered, Network.player, PlayerPrefs.GetString("playerName"));
+
+    var id1 : NetworkViewID= Network.AllocateViewID();
+    SetNetworkViewIDs(myLocalTransform.gameObject, id1);
+    SetPlayerTransform(Network.player, myLocalTransform);
+
+    networkView.RPC("SpawnOnNetwork", RPCMode.OthersBuffered, transform.position, transform.rotation, id1, PlayerPrefs.GetString("playerName"), false, Network.player);
+}
+
+function ServerRegisterHost () : void {
+    if (!Network.isServer)
+    {
+        return;
+    }
+    MultiplayerFunctions.SP.RegisterHost(PlayerPrefs.GetString("playerName") + "", "NoComment");
+}
+
+function SpawnLocalPlayer () : void {
+    //Spawn local player
+    // Randomize starting location
+    var pos : Vector3 = transform.position;
+    var rot : Quaternion = Quaternion.identity;
+
+    var spawnPoints : GameObject[]= GameObject.FindGameObjectsWithTag("SpawnPoint");
+    Debug.Log("Prepping local player spawn across " + spawnPoints.Length.ToString() + " spawnpoints.");
+    var localSpawnPoint : GameObject= spawnPoints[Random.Range(0, spawnPoints.Length)];
+    pos = localSpawnPoint.transform.position;
+    rot = localSpawnPoint.transform.rotation;
+
+    var id1 : NetworkViewID= new NetworkViewID();// = Network.AllocateViewID();
+    if (Network.isClient)
+    {
+        id1 = Network.AllocateViewID();
+    }
+
+    AddPlayer(Network.player, PlayerPrefs.GetString("playerName"));
+    StartCoroutine(SpawnOnNetwork(pos, rot, id1, PlayerPrefs.GetString("playerName"), true, Network.player));
+    //if (Network.isClient)
+    //{
+        networkView.RPC("AddPlayer", RPCMode.OthersBuffered, Network.player, PlayerPrefs.GetString("playerName"));
+        networkView.RPC("SpawnOnNetwork", RPCMode.OthersBuffered, pos, rot, id1,  PlayerPrefs.GetString("playerName"), false, Network.player);
+    //}
+
+    Instantiate(mainCamera, Vector3.zero, Quaternion.identity);
+    var mainCameraControl : SmoothFollowCamera = mainCamera.GetComponent(SmoothFollowCamera);
+    mainCameraControl.target = GameObject.FindGameObjectWithTag("Player").transform;
+}
+
+function SetPlayerTransform ( networkPlayer : NetworkPlayer ,   pTransform : Transform  ) : void {
+    if (!pTransform)
+    {
+        Debug.LogError("SetPlayersTransform has a NULL playerTransform!");
+    }
+     var thePlayer : PlayerInfo= GetPlayer(networkPlayer);
+    if (thePlayer == null)
+    {
+        Debug.LogError("SetPlayersPlayerTransform: No player found!");
+    }
+    thePlayer.transform = pTransform;
+}
+
+function GetPlayer ( networkPlayer : NetworkPlayer  ) : PlayerInfo {
+    for( var pla : PlayerInfo in PlayerList )
+    {
+        if (pla.networkPlayer == networkPlayer)
+        {
+             return pla;
+        }
+    }
+    return null;
+}
+
+
+@RPC
+function AddPlayer (networkPlayer : NetworkPlayer,   pname : String  ) : void {
+    if (GetPlayer(networkPlayer) != null)
+    {
+        Debug.LogError("AddPlayer: Player already exists!");
+        return;
+    }
+    var pla : PlayerInfo= new PlayerInfo();
+    pla.networkPlayer = networkPlayer;
+    pla.name = pname;
+    PlayerList.Add(pla);
+
+    if (Network.player == networkPlayer || Network.player + "" == "-1")
+    {
+        pla.isLocal = true;
+        localPlayerInfo = pla;
+    }
+}
+
+@RPC
+function RemovePlayer ( networkPlayer : NetworkPlayer  ) : void {
+     var thePlayer : PlayerInfo= GetPlayer(networkPlayer);
+
+    Network.RemoveRPCs(networkPlayer);
+    if (Network.isServer)
+    {
+        Network.DestroyPlayerObjects(networkPlayer);
+    }
+    if (thePlayer.transform)
+    {
+        Destroy(thePlayer.transform.gameObject);
+    }
+    PlayerList.Remove(thePlayer);
+}
+
+@RPC
+function SpawnOnNetwork ( pos : Vector3 ,   rot : Quaternion ,   id1 : NetworkViewID ,    playerName : String ,   amOwner : boolean ,   np : NetworkPlayer  ) : IEnumerator {
+    var newPlayer : Transform= Instantiate(playerPrefab, pos, rot) as Transform;
+    SetPlayerTransform(np, newPlayer);
+
+    SetNetworkViewIDs(newPlayer.gameObject, id1);
+
+    if (amOwner)
+    {
+        myLocalTransform = newPlayer;
+    }
+     var tmp : AvatarRPCs = newPlayer.GetComponent(AvatarRPCs);
+    tmp.SetOwner(amOwner);
+}
+
+
+function SetNetworkViewIDs ( go : GameObject ,   id1 : NetworkViewID  ) : void {
+     var nViews : Component[]= go.GetComponentsInChildren(NetworkView);
+    (nViews[0]  as NetworkView  ).viewID = id1;
+}

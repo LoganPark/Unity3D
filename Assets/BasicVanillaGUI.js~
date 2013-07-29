@@ -1,0 +1,44 @@
+#pragma strict
+public var networkControl : GameObject;
+
+private var showingConnectDialog : boolean = true;
+private var remoteServerIP = 127.0.0.1;
+private var remoteServerPort : int;
+private var remoteServerPassword = "";
+
+function Start () {
+
+}
+
+function Update () {
+
+}
+
+function OnGUI () {
+	var networkPanelVisibleCurrentX = Screen.width / 10;
+	var networkPanelVisibleCurrentY = Screen.height / 10;
+	var networkPanelHeight = Screen.height / 10 * 9;
+	var networkPanelLeftMargin = 12;
+	var networkPanelButtonWidth = 120;
+	var networkPanelButtonHeight = 24;
+	var networkPanelButtonMargin = 12;
+
+	var networkingControlScript : NetworkingControl = networkControl.GetComponent("basicVanillaNetworkingControl");
+
+	if(GUI.Button(Rect(100,100,100,24), "Client")) {
+		showingConnectDialog = true;
+	}
+
+	if(showingConnectDialog) {
+		GUI.Label (Rect (networkPanelVisibleCurrentX + networkPanelLeftMargin + networkPanelButtonWidth * 2 + networkPanelButtonMargin * 2, networkPanelVisibleCurrentY + networkPanelHeight - networkPanelButtonHeight * 5 - networkPanelButtonMargin * 5, networkPanelButtonWidth, networkPanelButtonHeight), "Server IP Address:");
+		GUI.Label (Rect (networkPanelVisibleCurrentX + networkPanelLeftMargin + networkPanelButtonWidth * 2 + networkPanelButtonMargin * 2, networkPanelVisibleCurrentY + networkPanelHeight - networkPanelButtonHeight * 4 - networkPanelButtonMargin * 4, networkPanelButtonWidth, networkPanelButtonHeight), "Server port:");
+		GUI.Label (Rect (networkPanelVisibleCurrentX + networkPanelLeftMargin + networkPanelButtonWidth * 2 + networkPanelButtonMargin * 2, networkPanelVisibleCurrentY + networkPanelHeight - networkPanelButtonHeight * 3 - networkPanelButtonMargin * 3, networkPanelButtonWidth, networkPanelButtonHeight), "Server password:");
+		remoteServerIP = GUI.TextField (Rect (networkPanelVisibleCurrentX + networkPanelLeftMargin + networkPanelButtonWidth * 3 + networkPanelButtonMargin * 3, networkPanelVisibleCurrentY + networkPanelHeight - networkPanelButtonHeight * 5 - networkPanelButtonMargin * 5, networkPanelButtonWidth, networkPanelButtonHeight), remoteServerIP, 15);
+		remoteServerPort = GUI.TextField (Rect (networkPanelVisibleCurrentX + networkPanelLeftMargin + networkPanelButtonWidth * 3 + networkPanelButtonMargin * 3, networkPanelVisibleCurrentY + networkPanelHeight - networkPanelButtonHeight * 4 - networkPanelButtonMargin * 4, networkPanelButtonWidth, networkPanelButtonHeight), remoteServerPort, 6);
+		remoteServerPassword = GUI.TextField (Rect (networkPanelVisibleCurrentX + networkPanelLeftMargin + networkPanelButtonWidth * 3 + networkPanelButtonMargin * 3, networkPanelVisibleCurrentY + networkPanelHeight - networkPanelButtonHeight * 3 - networkPanelButtonMargin * 3, networkPanelButtonWidth, networkPanelButtonHeight), remoteServerPassword, 256);
+
+		if(GUI.Button(Rect(networkPanelVisibleCurrentX + networkPanelLeftMargin + networkPanelButtonWidth * 2 + networkPanelButtonMargin * 2, networkPanelVisibleCurrentY + networkPanelHeight - networkPanelButtonHeight * 2 - networkPanelButtonMargin * 2, networkPanelButtonWidth * 2 + networkPanelButtonMargin, networkPanelButtonHeight), GUIContent("Connect to this server", "Click this button to connect to the server you've specified in the setting above."))) {
+			networkingControlScript.ConnectToServer(remoteServerIP, parseInt(remoteServerPort), remoteServerPassword);
+		}
+	}
+}

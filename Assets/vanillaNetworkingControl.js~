@@ -1,0 +1,13 @@
+#pragma strict
+
+function Start () {
+
+}
+
+function Update () {
+
+}
+
+function ConnectToServer (var remoteServerIP, var remoteServerPort), var remoteServerPassword) {
+	Debug.Log("Basic Vanilla Networking: Connecting to remote server at: " + remoteServerIP + ":" + remoteServerPort.ToString());
+}

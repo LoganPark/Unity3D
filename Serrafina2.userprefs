@@ -1,0 +1,30 @@
+﻿<Properties>
+  <MonoDevelop.Ide.Workspace ActiveConfiguration="Debug" />
+  <MonoDevelop.Ide.Workbench ActiveDocument="Assets/Scripts/BasicVanillaNetworkingControl.js">
+    <Files>
+      <File FileName="Assets/Scripts/BasicVanillaNetworkingControl.js" Line="413" Column="72" />
+      <File FileName="Assets/Scripts/NetworkingControl.js" Line="409" Column="33" />
+      <File FileName="Assets/Scripts/BasicVanillaDesignCameraControl.js" Line="166" Column="1" />
+      <File FileName="Assets/Scripts/basicVanillaLocalInput.js" Line="19" Column="68" />
+      <File FileName="Assets/Scripts/tileEngine.js" Line="1" Column="1" />
+      <File FileName="Assets/Scripts/SmoothFollowCamera.js" Line="1" Column="1" />
+    </Files>
+    <Pads>
+      <Pad Id="ProjectPad">
+        <State expanded="True">
+          <Node name="Assembly-UnityScript" expanded="True">
+            <Node name="Assets" expanded="True">
+              <Node name="Scripts" expanded="True">
+                <Node name="BasicVanillaNetworkingControl.js" selected="True" />
+              </Node>
+            </Node>
+          </Node>
+        </State>
+      </Pad>
+    </Pads>
+  </MonoDevelop.Ide.Workbench>
+  <MonoDevelop.Ide.DebuggingService.Breakpoints>
+    <BreakpointStore />
+  </MonoDevelop.Ide.DebuggingService.Breakpoints>
+  <MonoDevelop.Ide.DebuggingService.PinnedWatches />
+</Properties>

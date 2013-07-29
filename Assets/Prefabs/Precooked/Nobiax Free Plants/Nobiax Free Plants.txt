@@ -1,0 +1,23 @@
+Provided by Nobiax.
+
+Absolutely free to use or to modify in any kind of work (personal, commercial or else).
+
+Give me a link of the result at nobiax.deviantart.com or my other account on OpenGameArt.com or ShareCG.com
+( watch my journal on deviantart ) ;)
+
+
+_____
+
+This package contains many Nobiax Free Plan releases:
+
+- 3 complex plant meshes and textures: fern, palm and palviflora.
+- 1 grass mesh and 6 different textures
+- 3 simple plant meshes with 20 textures
+
+30 groups of 512x512 diffuse (with alpha), bump and specular maps.
+9 meshes in total.  
+
+_____
+
+Please note that you can mix any plant prefab with any plant material, so in
+"prefabs" folder you will find only some examples of the combinations.

@@ -1,0 +1,65 @@
+#pragma strict
+
+// Customization Variables
+var networkIDNumber: String;
+var OneTime = 0;
+var renderCustomizeWindow : boolean  = false;
+var customizeWindowRect : Rect = Rect (20, 20, 320, 270);
+var customizeWindowIsHidden= true;
+var addTextureBodyI="serrafina.shadowmecha.org/textures/1.jpg";
+var addTextureHeadI="serrafina.shadowmecha.org/textures/2.jpg";
+var addTextureHairI="serrafina.shadowmecha.org/textures/3.jpg";
+var addTextureBody=" ";
+var addTextureHead =" ";
+var addTextureHair =" ";
+var customizerButtonTitle="Avatar - Open/Change";
+
+function Start () {
+
+}
+
+function Update () {
+
+}
+
+// RPC Remote Procedure Call Functions
+@RPC
+function fireRocket(rocketViewID : NetworkViewID, rocketLocation : Vector3, rocketOrientation : Quaternion) {
+	var dumbfiredRocket = Instantiate(dumbfireRocket, rocketLocation, rocketOrientation) as Rigidbody;
+	var nView : NetworkView;
+	nView = dumbfiredRocket.GetComponent(NetworkView);
+	nView.viewID = rocketViewID;
+	dumbfiredRocket.velocity = rocketRezzer.TransformDirection (Vector3.forward * 10);
+}
+
+@RPC
+function Change(avatarNetworkID:String) {
+	if(gameObject.networkView.viewID.ToString().Remove(0,13) == avatarNetworkID) {
+		var gos= GetComponentsInChildren(Transform);
+		for (go in gos) {
+			if(go.tag == "PlayerCanRetexture")
+			go.name = go.name + avatarNetworkID;
+		}
+		var renderers = GetComponentsInChildren(Renderer);
+		for (var r : Renderer in renderers) {
+			for (var m : Material in r.materials) {
+				m.name = m.name + avatarNetworkID;
+			}
+		}
+	}
+}
+
+@RPC
+function retextureAvFromWeb(avatarNetworkID : String, textureURL : String ) {
+	Debug.Log("retextureAvatar: Checking to see if we can web-retexture Avatar #" + avatarNetworkID.ToString());
+	if(gameObject.networkView.viewID.ToString().Remove(0,13) == avatarNetworkID) {
+		Debug.Log("retextureAvatar: Attempting to download texture from " + textureURL);
+		//texture body
+		var avatarGameObject = GameObject.Find("playerPrefab" + avatarNetworkID);
+		Debug.Log("retextureAvatar: target av is " + "playerPrefab" + avatarNetworkID);
+		var urlTT = textureURL;
+		var textureDownloadRequest = WWW(urlTT);
+		yield textureDownloadRequest;
+		avatarGameObject.renderer.materials[0].mainTexture = textureDownloadRequest.texture;
+	}
+}

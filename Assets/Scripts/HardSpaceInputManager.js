@@ -1,0 +1,175 @@
+#pragma strict
+
+public var GameStateControlScript : HardSpaceGameStateController; 
+GameStateControlScript = GetComponent("HardSpaceGameStateController");
+
+public var CameraControlScript : SmoothFollowCamera;
+CameraControlScript = Camera.main.GetComponent("SmoothFollowCamera");
+
+public var InventoryScript : HardSpaceInventory;
+InventoryScript = GetComponent("HardSpaceInventory");
+
+public var PrimPrefab : GameObject;
+
+public var PlayerCapsule : GameObject;
+
+public var AvAttributesScript : HardSpaceAvatarAttributes;
+AvAttributesScript = PlayerCapsule.GetComponent("HardSpaceAvatarAttributes");
+
+public var editCamSpeed : float = 0.4;
+
+function Start () {
+
+}
+
+function Update () {
+	if(Input.GetMouseButtonDown(0)) {
+		
+		Debug.Log("Input Manager: Left click.");
+		
+		if( GameStateControlScript.LocalPlayerState == 1 ) {
+			// Then we're in edit mode
+			
+			var leftClickRay : Ray = Camera.main.ScreenPointToRay (Vector3(Screen.width / 2, Screen.height / 2,0));
+			var hit : RaycastHit;
+
+			if (Physics.Raycast (leftClickRay, hit, 15)) {
+				Debug.Log("Input Manager: Left clicked on object in range.");
+				var currentItemQuantity : int = InventoryScript.getActiveItemQuantity();
+				if((hit.transform.name == "PlayerCapsule" || hit.transform.name == "AvPrim") && currentItemQuantity > 0) {
+					Debug.Log("Input Manager: Clicked " + hit.collider.name + " at " + (hit.transform.localPosition - hit.point).ToString());
+					
+					var primPos : Vector3 = hit.point + hit.normal.normalized * 0.5;
+					
+					Debug.Log("Input Manager: raw PrimPos: " + (primPos - hit.point).ToString());
+					
+					//primPos.x += hit.transform.root.position.x - Mathf.Round(hit.transform.root.position.x);
+					//primPos.y += hit.transform.root.position.y - Mathf.Round(hit.transform.root.position.y);
+					//primPos.z += hit.transform.root.position.z - Mathf.Round(hit.transform.root.position.z);
+					//primPos.y += Mathf.Round(primPos.y);
+					//primPos.z += Mathf.Round(primPos.z);
+					
+					//Debug.Log("final PrimPos: " + primPos.ToString());
+					
+					var AvPrim = Instantiate(PrimPrefab, primPos, hit.transform.rotation);
+					
+					AvPrim.transform.parent = PlayerCapsule.transform;
+					AvPrim.transform.name = "AvPrim";
+					AvPrim.transform.localPosition.x = Mathf.Round(AvPrim.transform.localPosition.x);
+					AvPrim.transform.localPosition.y = Mathf.Round(AvPrim.transform.localPosition.y);
+					AvPrim.transform.localPosition.z = Mathf.Round(AvPrim.transform.localPosition.z);
+					
+					InventoryScript.assignPrimMatter(AvPrim);
+					InventoryScript.decrementActiveItemQuantity();
+					
+					/*
+					var numberOfPrims : int = 1;
+					for (var child : GameObject in hit.transform) {
+						if(child.name == "AvPrim(Clone)") {
+							numberOfPrims++;
+						}
+					}
+					
+					Debug.Log("Av size: " + numberOfPrims.ToString());
+					*/
+					
+					AvAttributesScript.RefreshHierarchy();
+				}
+				
+			} // End left click in range
+		} // End edit mode test
+		else if(GameStateControlScript.LocalPlayerState == 0) {
+			Debug.Log("Input Manager: pew pew");
+		}
+	} // End left click test
+	
+
+	// Right click
+	if(Input.GetMouseButtonDown(1)) {
+		
+		//Debug.Log("Input Manager: Right click.");
+		var rightClickRay : Ray = camera.main.ScreenPointToRay (Vector3(Screen.width / 2, Screen.height / 2,0));
+		var rightClickHit : RaycastHit;
+
+	  	if (Physics.Raycast (rightClickRay, rightClickHit, 5)) {
+			
+			Debug.Log("Input Manager: Right clicked on object in range: " + rightClickHit.collider.tag);
+			
+	    	if(rightClickHit.collider.tag == "Main Thruster" || 
+	    		rightClickHit.collider.tag == "Afterburner" || 
+	    		rightClickHit.collider.tag == "Vernier Thruster" || 
+	    		rightClickHit.collider.tag == "Fuel Tank" || 
+	    		rightClickHit.collider.tag == "Radiation Shielding" ) {
+	    		rightClickHit.collider.transform.parent = null;
+	    		
+	    		Destroy(rightClickHit.collider.gameObject);
+				
+				AvAttributesScript.RefreshHierarchy();
+				InventoryScript.incrementItemQuantity(rightClickHit.transform.gameObject);
+			}
+		} // End right click in range
+	} // End right click test
+
+	if(Input.GetMouseButtonDown(2)) {
+		Debug.Log("Input Manager: Pressed middle click.");
+	} // End middle click test
+	
+	if(Input.GetKeyDown("e")) {
+		// Debug.Log("Input Manager: Toggling edit mode");
+		if(GameStateControlScript.LocalPlayerState == 0) {
+			Debug.Log("Input Manager: Entering edit mode.");
+			GameStateControlScript.LocalPlayerState = 1;
+			CameraControlScript.SwitchToEditView();
+		} else if(GameStateControlScript.LocalPlayerState == 1) {
+			Debug.Log("Input Manager: Entering normal play mode.");
+			GameStateControlScript.LocalPlayerState = 0;
+			CameraControlScript.SwitchToPlayView();
+		}
+	} // End "e" keydown
+	
+	if(GameStateControlScript.LocalPlayerState == 1) {
+	
+		if( Input.GetKey("w")) {
+			Camera.main.transform.position += Vector3.Normalize(Camera.main.transform.TransformDirection(Vector3.forward)) * editCamSpeed;
+		}
+		if( Input.GetKey("s")) {
+			Camera.main.transform.position -= Vector3.Normalize(Camera.main.transform.TransformDirection(Vector3.forward)) * editCamSpeed;
+		}
+		if( Input.GetKey("d")) {
+			Camera.main.transform.position += Vector3.Normalize(Camera.main.transform.TransformDirection(Vector3.right)) * editCamSpeed;
+		}
+		if( Input.GetKey("a")) {
+			Camera.main.transform.position -= Vector3.Normalize(Camera.main.transform.TransformDirection(Vector3.right)) * editCamSpeed;
+		}
+		if( Input.GetAxis("Keyboard Y Axis") < 0) {
+			Camera.main.transform.position -= Vector3.Normalize(Camera.main.transform.TransformDirection(Vector3.up)) * editCamSpeed;
+		}
+		if( Input.GetAxis("Keyboard Y Axis") > 0) {
+			Camera.main.transform.position += Vector3.Normalize(Camera.main.transform.TransformDirection(Vector3.up)) * editCamSpeed;
+		}
+	} 
+	
+} // End Update()
+
+
+
+function FixedUpdate () {
+	if(GameStateControlScript.LocalPlayerState == 0) {
+	
+		if( Input.GetKey("w")) {
+			PlayerCapsule.rigidbody.AddRelativeForce (Vector3.forward * (AvAttributesScript.NumberOfMainThrusters + 1));
+		}
+		if( Input.GetKey("s")) {
+			PlayerCapsule.rigidbody.AddRelativeForce (Vector3.forward * (AvAttributesScript.NumberOfMainThrusters + 1) * -1);
+		}
+		if( Input.GetKey("d")) {
+			PlayerCapsule.rigidbody.AddRelativeForce (Vector3.right * (AvAttributesScript.NumberOfMainThrusters + 1));
+		}
+		if( Input.GetKey("a")) {
+			PlayerCapsule.rigidbody.AddRelativeForce(Vector3.right * (AvAttributesScript.NumberOfMainThrusters + 1) * -1);
+		}
+		if( Input.GetAxis("Keyboard Y Axis")) {
+			PlayerCapsule.rigidbody.AddRelativeForce (Vector3.up * Input.GetAxis("Keyboard Y Axis") * (AvAttributesScript.NumberOfMainThrusters + 1));
+		}
+	} 
+}

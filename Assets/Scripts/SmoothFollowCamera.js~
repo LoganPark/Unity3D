@@ -1,0 +1,158 @@
+#pragma strict
+
+var target : Transform;
+var distance = 5.0;
+var height = 1.0;
+var translateSpeed = 200.0;
+var heightDamping = 2.0;
+var rotationDamping = 3.0;
+var targetLocked : boolean = true;
+
+
+private var wasMouseLocked = false;
+
+enum MouseCamRotationAxes { MouseXAndY = 0, MouseX = 1, MouseY = 2 }
+private var originalRotation : Quaternion;
+public var axes : MouseCamRotationAxes = MouseCamRotationAxes.MouseXAndY;
+private var sensitivityX : float = 0.8;
+private var sensitivityY : float = 0.8;
+private var minimumX : float = -360;
+private var maximumX : float = 360;
+private var  minimumY : float = -60;
+private var maximumY : float = 60;
+private var rotationX : float = 0;
+private var rotationY : float = 0;
+
+var PlayerCapsule : GameObject;
+
+function Start () {
+	Screen.lockCursor = true;
+
+	// Make the rigid body not change rotation
+	if (rigidbody){
+		rigidbody.freezeRotation = true;
+	}
+	originalRotation = transform.localRotation;
+
+	PlayerCapsule = GameObject.Find("PlayerCapsule");
+
+}
+	
+function Update () {
+
+}
+
+function LateUpdate() {
+	if( targetLocked ) {
+	
+		var wantedRotationYAngle = target.eulerAngles.y;
+		var wantedRotationXAngle = target.eulerAngles.x;
+		var wantedHeight = target.position.y + height;
+		var currentRotationYAngle = transform.eulerAngles.y;
+		var currentRotationXAngle = transform.eulerAngles.x;
+		var currentHeight = transform.position.y;
+
+		currentRotationYAngle = Mathf.LerpAngle (currentRotationYAngle, wantedRotationYAngle,rotationDamping * Time.deltaTime);
+		currentRotationXAngle = Mathf.LerpAngle (currentRotationXAngle, wantedRotationXAngle,rotationDamping * Time.deltaTime);
+
+		currentHeight = Mathf.Lerp (currentHeight, wantedHeight, heightDamping * Time.deltaTime);
+		var currentRotation = Quaternion.Euler (currentRotationXAngle, currentRotationYAngle, 0);
+		
+		var targetPosition : Vector3 = target.position;
+		targetPosition -= currentRotation * Vector3.forward * distance;
+		targetPosition.y = currentHeight;
+		transform.position = Vector3.Lerp(transform.position, targetPosition, Time.deltaTime * translateSpeed);
+		transform.LookAt (target);
+	} else {
+		if(!Screen.lockCursor){
+			return;
+		}
+		
+		var yQuaternion : Quaternion;
+		var xQuaternion : Quaternion;
+	
+		if (axes == MouseCamRotationAxes.MouseXAndY)
+		{
+			// Read the mouse input axis
+			rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+			rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+
+			rotationX = ClampAngle (rotationX, minimumX, maximumX);
+			rotationY = ClampAngle (rotationY, minimumY, maximumY);
+		
+			xQuaternion = Quaternion.AngleAxis (rotationX, Vector3.up);
+			yQuaternion = Quaternion.AngleAxis (rotationY, Vector3.left);
+		
+			transform.localRotation = originalRotation * xQuaternion * yQuaternion;
+		}
+		else if (axes == MouseCamRotationAxes.MouseX)
+		{
+			rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+			rotationX = ClampAngle (rotationX, minimumX, maximumX);
+
+			xQuaternion  = Quaternion.AngleAxis (rotationX, Vector3.up);
+			transform.localRotation = originalRotation * xQuaternion;
+		}
+		else
+		{
+			rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+			rotationY = ClampAngle (rotationY, minimumY, maximumY);
+
+			yQuaternion = Quaternion.AngleAxis (rotationY, Vector3.left);
+			transform.localRotation = originalRotation * yQuaternion;
+		}
+		// In standalone player we have to provide our own key
+		// input for unlocking the cursor
+		if (Input.GetKeyDown ("`")) {
+			Screen.lockCursor = false;
+		}
+		// Did we lose cursor locking?
+		// eg. because the user pressed escape
+		// or because he switched to another application
+		// or because some script set Screen.lockCursor = false;
+		if (!Screen.lockCursor && wasMouseLocked) {
+			wasMouseLocked = false;
+			DidUnlockCursor();
+		}
+		// Did we gain cursor locking?
+		else if (Screen.lockCursor && !wasMouseLocked) {
+			wasMouseLocked = true;
+			DidLockCursor ();
+		}
+
+		
+	}
+}
+
+function SwitchToEditView() {
+	distance = 10.0;
+	height = 0.0;
+	targetLocked = false;
+}
+
+function SwitchToPlayView() {
+	distance = 5.0;
+	height = 1.0;
+	targetLocked = true;
+}
+
+// Called when the cursor is actually being locked
+function DidLockCursor () {
+Debug.Log("Design camera control: Locking cursor");
+// Disable the button
+//guiTexture.enabled = false;
+}
+// Called when the cursor is being unlocked
+// or by a script calling Screen.lockCursor = false;
+function DidUnlockCursor () {
+Debug.Log("Design camera control: Unlocking cursor");
+}
+
+static function ClampAngle ( angle : float,  min : float, max :  float) : float
+{
+if (angle < -360)
+angle += 360;
+if (angle > 360)
+angle -= 360;
+return Mathf.Clamp (angle, min, max);
+}

@@ -1,0 +1,14 @@
+#pragma strict
+var homeLight : Light;
+
+function Start () {
+	rezHomeLight();
+}
+
+function Update () {
+
+}
+
+function rezHomeLight() {
+	Instantiate(homeLight, transform.position, transform.rotation);
+}

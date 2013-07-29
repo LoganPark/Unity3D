@@ -1,0 +1,169 @@
+#pragma strict
+private var wasLocked = false;
+
+enum RotationAxes { MouseXAndY = 0, MouseX = 1, MouseY = 2 }
+private var originalRotation : Quaternion;
+public var axes : RotationAxes = RotationAxes.MouseXAndY;
+private var sensitivityX : float = 0.5;
+private var sensitivityY : float = 0.5;
+private var minimumX : float = -360;
+private var maximumX : float = 360;
+private var  minimumY : float = -60;
+private var maximumY : float = 60;
+private var rotationX : float = 0;
+private var rotationY : float = 0;
+
+private var strafeSpeed = 50.0;
+private var forwardSpeed = 50.0;
+
+public var AvSubPrimPrefab : GameObject;
+
+private var rootCube : GameObject;
+
+private var inventoryScript : BasicVanillaInventory;
+inventoryScript = GetComponent("BasicVanillaInventory");
+
+public var notCurrentlyDesigning : boolean = true;
+
+function Start () {
+	Screen.lockCursor = true;
+
+	// Make the rigid body not change rotation
+	if (rigidbody){
+		rigidbody.freezeRotation = true;
+	}
+	originalRotation = transform.localRotation;
+
+	rootCube = GameObject.Find("Root Cube");
+}
+
+function Update () {
+	if(Input.GetKeyDown("m")) {
+
+	}
+
+	//rigidbody.AddRelativeForce(Vector3(Input.GetAxis("Horizontal") * strafeSpeed, 0, Input.GetAxis("Vertical") * forwardSpeed));
+
+	if(!Screen.lockCursor){
+		return;
+	}
+	
+	var yQuaternion : Quaternion;
+	var xQuaternion : Quaternion;
+	
+	if (axes == RotationAxes.MouseXAndY)
+	{
+		// Read the mouse input axis
+		rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+		rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+
+		rotationX = ClampAngle (rotationX, minimumX, maximumX);
+		rotationY = ClampAngle (rotationY, minimumY, maximumY);
+		
+		xQuaternion = Quaternion.AngleAxis (rotationX, Vector3.up);
+		yQuaternion = Quaternion.AngleAxis (rotationY, Vector3.left);
+		
+		transform.localRotation = originalRotation * xQuaternion * yQuaternion;
+	}
+	else if (axes == RotationAxes.MouseX)
+	{
+		rotationX += Input.GetAxis("Mouse X") * sensitivityX;
+		rotationX = ClampAngle (rotationX, minimumX, maximumX);
+
+		xQuaternion  = Quaternion.AngleAxis (rotationX, Vector3.up);
+		transform.localRotation = originalRotation * xQuaternion;
+	}
+	else
+	{
+		rotationY += Input.GetAxis("Mouse Y") * sensitivityY;
+		rotationY = ClampAngle (rotationY, minimumY, maximumY);
+
+		yQuaternion = Quaternion.AngleAxis (rotationY, Vector3.left);
+		transform.localRotation = originalRotation * yQuaternion;
+	}
+
+	// Left click
+	if(Input.GetMouseButtonDown(0)) {
+
+		var ray : Ray = camera.ScreenPointToRay (Vector3(Screen.width / 2, Screen.height / 2,0));
+		var hit : RaycastHit;
+
+	  if (Physics.Raycast (ray, hit, 5)) {
+	  	var currentItemQuantity : int = inventoryScript.getActiveItemQuantity();
+      if((hit.transform.name == "Root Cube" || hit.transform.name == "AvSubPrim(Clone)") && currentItemQuantity > 0) {
+      	var primPos : Vector3 = hit.point + hit.normal.normalized * 0.75;
+      	primPos.x = Mathf.Round(primPos.x);
+      	primPos.y = Mathf.Round(primPos.y);
+      	primPos.z = Mathf.Round(primPos.z);
+
+      	var AvSubPrim = Instantiate(AvSubPrimPrefab, primPos, hit.transform.rotation);
+      	AvSubPrim.transform.parent = rootCube.transform;
+      	inventoryScript.assignPrimMatter(AvSubPrim);
+
+				inventoryScript.decrementActiveItemQuantity();
+      }
+	  }
+	}
+
+	// Right click
+	if(Input.GetMouseButtonDown(1)) {
+		var destroyRay : Ray = camera.ScreenPointToRay (Vector3(Screen.width / 2, Screen.height / 2,0));
+		var destroyHit : RaycastHit;
+
+	  if (Physics.Raycast (destroyRay, destroyHit, 5)) {
+	    if(destroyHit.transform.name == "AvSubPrim(Clone)") {
+				Destroy(destroyHit.transform.gameObject);
+				inventoryScript.incrementItemQuantity(destroyHit.transform.gameObject);
+			}
+		}
+	}
+
+	if(Input.GetMouseButtonDown(2)) {
+		Debug.Log("Design camera control: Pressed middle click.");
+	}
+
+	// In standalone player we have to provide our own key
+  // input for unlocking the cursor
+  if (Input.GetKeyDown ("`"))
+      Screen.lockCursor = false;
+  // Did we lose cursor locking?
+  // eg. because the user pressed escape
+  // or because he switched to another application
+  // or because some script set Screen.lockCursor = false;
+  if (!Screen.lockCursor && wasLocked) {
+      wasLocked = false;
+      DidUnlockCursor();
+  }
+  // Did we gain cursor locking?
+  else if (Screen.lockCursor && !wasLocked) {
+      wasLocked = true;
+      DidLockCursor ();
+  }
+}
+
+// Called when the cursor is actually being locked
+function DidLockCursor () {
+    Debug.Log("Design camera control: Locking cursor");
+    // Disable the button
+    //guiTexture.enabled = false;
+}
+// Called when the cursor is being unlocked
+// or by a script calling Screen.lockCursor = false;
+function DidUnlockCursor () {
+    Debug.Log("Design camera control: Unlocking cursor");
+}
+
+static function ClampAngle ( angle : float,  min : float, max :  float) : float
+{
+	if (angle < -360)
+		angle += 360;
+	if (angle > 360)
+		angle -= 360;
+	return Mathf.Clamp (angle, min, max);
+}
+
+function OnGUI() {
+
+}
+
+
